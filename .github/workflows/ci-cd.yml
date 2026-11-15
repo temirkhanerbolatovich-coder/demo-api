@@ -2,9 +2,9 @@ name: ci-cd
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, lab8/incident]
   push:
-    branches: [main]
+    branches: [main, lab8/incident]
     tags: ["v*.*.*"]
 
 permissions:
@@ -86,4 +86,31 @@ jobs:
           build-args: APP_VERSION=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    needs: image
+    if: github.ref == 'refs/heads/lab8/incident' || github.ref == 'refs/tags/v1.1.0'
+    runs-on: ubuntu-latest
+    env:
+      API_IMAGE: ${{ needs.image.outputs.image }}
+      API_TAG: ${{ needs.image.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Prepare isolated deployment credentials
+        run: |
+          password="$(openssl rand -hex 16)"
+          echo "::add-mask::$password"
+          echo "DB_PASSWORD=$password" >> "$GITHUB_ENV"
+      - name: Deploy exact image and verify service
+        run: |
+          docker compose pull api
+          docker compose up -d --no-build --wait --wait-timeout 90
+          curl --fail --silent --show-error --max-time 10 http://127.0.0.1:18093/health/ready
+          expected="${API_TAG#sha-}"
+          actual="$(curl --fail --silent --show-error --max-time 10 http://127.0.0.1:18093/ | jq -r .version)"
+          [[ "$actual" == "$expected"* ]]
+          curl --fail --silent --show-error --max-time 10 --output /dev/null http://127.0.0.1:18093/api/tasks
+      - name: Stop isolated Compose project
+        if: always()
+        run: docker compose down
 
