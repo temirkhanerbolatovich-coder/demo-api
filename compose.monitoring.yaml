@@ -1,0 +1,12 @@
+services:
+  api:
+    networks:
+      default:
+      scrape:
+        aliases:
+          - demo-api
+
+networks:
+  scrape:
+    external: true
+    name: daryn-lab07-scrape
