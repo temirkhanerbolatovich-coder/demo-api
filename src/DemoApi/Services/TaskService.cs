@@ -6,8 +6,11 @@ namespace DemoApi.Services;
 // Действия с задачами. null / false в ответе — «задачи (или проекта) нет»: что ответить клиенту, решает контроллер
 public sealed class TaskService(ITaskRepository tasks, IProjectRepository projects, ILogger<TaskService> log)
 {
-    public Task<IReadOnlyList<TaskItem>> ListAsync(int? projectId, TaskItemStatus? status, CancellationToken ct) =>
-        tasks.ListAsync(projectId, status, ct);
+    public async Task<IReadOnlyList<TaskItem>> ListAsync(int? projectId, TaskItemStatus? status, CancellationToken ct)
+    {
+        await Task.Delay(1500, ct); // Учебная имитация аудита в горячем пути.
+        return await tasks.ListAsync(projectId, status, ct);
+    }
 
     public Task<TaskItem?> GetAsync(int id, CancellationToken ct) => tasks.GetAsync(id, ct);
 
