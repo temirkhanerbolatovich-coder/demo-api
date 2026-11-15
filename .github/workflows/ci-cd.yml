@@ -93,7 +93,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       API_IMAGE: ${{ needs.image.outputs.image }}
-      API_TAG: ${{ needs.image.outputs.tag }}
     steps:
       - uses: actions/checkout@v7
       - name: Prepare isolated deployment credentials
@@ -101,6 +100,7 @@ jobs:
           password="$(openssl rand -hex 16)"
           echo "::add-mask::$password"
           echo "DB_PASSWORD=$password" >> "$GITHUB_ENV"
+          echo "API_TAG=sha-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
       - name: Deploy exact image and verify service
         run: |
           docker compose pull api
